@@ -134,7 +134,9 @@ const verifyOTP = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        location: user.location || {},
+        farmingProfile: user.farmingProfile || {}
       }
     });
   } catch (error) {
@@ -246,7 +248,9 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        location: user.location || {},
+        farmingProfile: user.farmingProfile || {}
       }
     });
   } catch (error) {
