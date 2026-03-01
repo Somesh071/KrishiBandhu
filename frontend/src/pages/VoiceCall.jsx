@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import useConversationStore from '../store/conversationStore';
 import socketService from '../services/socket.service';
+import { AppLayout } from '../components/Layout';
 
 const VoiceCall = () => {
   const navigate = useNavigate();

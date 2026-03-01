@@ -19,6 +19,7 @@ import {
 import toast from 'react-hot-toast';
 import useConversationStore from '../store/conversationStore';
 import conversationService from '../services/conversation.service';
+import { AppLayout, PageHeader } from '../components/Layout';
 
 const History = () => {
   const navigate = useNavigate();
@@ -159,7 +160,7 @@ const History = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
+    <AppLayout>
       {/* Delete Confirmation Modal */}
       {deleteModal.open && (
         <>
@@ -401,7 +402,7 @@ const History = () => {
           </div>
         </div>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

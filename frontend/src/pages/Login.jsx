@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowLeft, Loader2, Phone } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Loader2, Sprout } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 
@@ -61,14 +61,14 @@ const Login = () => {
           {/* Login Card */}
           <div className="card p-8">
             <div className="mb-8">
-              <div className="w-12 h-12 bg-primary-600 rounded-sm flex items-center justify-center mb-6">
-                <Phone className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-6">
+                <Sprout className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
                 Welcome back
               </h1>
               <p className="text-sm text-neutral-500">
-                Enter your credentials to access your account
+                Sign in to your KrishiBandhu account
               </p>
             </div>
 
@@ -151,13 +151,13 @@ const Login = () => {
       </div>
 
       {/* Right side - Decorative */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-700 items-center justify-center p-12">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-800 items-center justify-center p-12">
         <div className="max-w-md text-center">
-          <div className="w-20 h-20 bg-white rounded-sm flex items-center justify-center mx-auto mb-8">
-            <Phone className="w-10 h-10 text-primary-600" />
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <Sprout className="w-10 h-10 text-primary-600" />
           </div>
-          <h2 className="text-3xl font-semibold text-white mb-4">
-            Farmer Assistant
+          <h2 className="text-3xl font-bold text-white mb-4">
+            KrishiBandhu
           </h2>
           <p className="text-primary-100 leading-relaxed">
             Your AI-powered agricultural companion. Get instant answers to farming queries through voice or text.

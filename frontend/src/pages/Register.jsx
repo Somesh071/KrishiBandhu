@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, Lock, ArrowLeft, Loader2, Sprout } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 
@@ -63,13 +63,13 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex transition-colors">
       {/* Left side - Decorative */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-700 items-center justify-center p-12">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-800 items-center justify-center p-12">
         <div className="max-w-md text-center">
-          <div className="w-20 h-20 bg-white rounded-sm flex items-center justify-center mx-auto mb-8">
-            <Phone className="w-10 h-10 text-primary-600" />
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <Sprout className="w-10 h-10 text-primary-600" />
           </div>
-          <h2 className="text-3xl font-semibold text-white mb-4">
-            Join Farmer Assistant
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Join KrishiBandhu
           </h2>
           <p className="text-primary-100 leading-relaxed">
             Create your account and start getting AI-powered agricultural assistance for all your farming needs.
@@ -109,11 +109,11 @@ const Register = () => {
           {/* Register Card */}
           <div className="card p-8">
             <div className="mb-8">
-              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
                 Create account
               </h1>
               <p className="text-sm text-neutral-500">
-                Fill in your details to get started
+                Join KrishiBandhu and start your journey
               </p>
             </div>
 

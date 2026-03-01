@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import { authService } from '../services/auth.service';
 import dataService from '../services/data.service';
+import { AppLayout, PageHeader } from '../components/Layout';
 
 // Indian states list
 const INDIAN_STATES = [
@@ -242,21 +243,12 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <header className="topbar">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="btn-ghost"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </button>
-          <h1 className="text-base font-semibold text-neutral-900">Profile</h1>
-          <div className="w-20" />
-        </div>
-      </header>
+    <AppLayout>
+      <div className="max-w-4xl mx-auto">
+        <PageHeader 
+          title="Profile Settings" 
+          description="Manage your account information and preferences"
+        />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -782,7 +774,8 @@ const Profile = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

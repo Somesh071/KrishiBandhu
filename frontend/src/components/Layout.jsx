@@ -1,69 +1,171 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Phone, 
   LayoutDashboard, 
   MessageSquare, 
-  History, 
-  User, 
   LogOut, 
   Menu,
   X,
-  Moon,
-  Sun,
+  ChevronLeft,
   ChevronRight,
-  Settings,
-  Shield
+  Bell,
+  ChevronDown,
+  Phone,
+  History,
+  Shield,
+  Sprout,
+  Settings
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { ThemeToggle } from './ui/ThemeToggle';
+import { Avatar } from './ui/Avatar';
+import { SidebarItem, SidebarSection } from './ui/SidebarItem';
 
 // =============================================================================
-// TOPBAR COMPONENT
+// LOGO COMPONENT
 // =============================================================================
-export const TopBar = ({ 
-  title = 'Farmer Assistant', 
-  showLogo = true, 
-  actions = null,
-  showSearch = false 
-}) => {
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('darkMode') === 'true';
-  });
+const Logo = ({ collapsed = false }) => (
+  <Link to="/dashboard" className="flex items-center gap-3 group">
+    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-105">
+      <Sprout className="w-5 h-5 text-white" />
+    </div>
+    {!collapsed && (
+      <div className="flex flex-col">
+        <span className="text-lg font-bold text-neutral-900 dark:text-white leading-tight">
+          KrishiBandhu
+        </span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+          Farmer Assistant
+        </span>
+      </div>
+    )}
+  </Link>
+);
+
+// =============================================================================
+// PROFILE DROPDOWN
+// =============================================================================
+const ProfileDropdown = () => {
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <header className="topbar sticky top-0 z-40">
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+      >
+        <Avatar name={user?.name} size="sm" />
+        <div className="hidden md:block text-left">
+          <p className="text-sm font-medium text-neutral-900 dark:text-white">
+            {user?.name || 'User'}
+          </p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            {user?.role === 'admin' ? 'Administrator' : 'Farmer'}
+          </p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-soft-lg z-50 py-2 animate-fade-in">
+          <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+            <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
+            <p className="text-xs text-neutral-500 truncate">{user?.email}</p>
+          </div>
+          
+          <div className="py-2">
+            <Link
+              to="/profile"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              <Settings className="w-4 h-4" />
+              Profile & Settings
+            </Link>
+            <Link
+              to="/history"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              <History className="w-4 h-4" />
+              Conversation History
+            </Link>
+          </div>
+
+          <div className="border-t border-neutral-100 dark:border-neutral-800 pt-2">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================================================
+// NOTIFICATION BELL
+// =============================================================================
+const NotificationBell = () => {
+  const [hasNotifications] = useState(true);
+
+  return (
+    <button className="relative p-2 rounded-xl text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+      <Bell className="w-5 h-5" />
+      {hasNotifications && (
+        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+      )}
+    </button>
+  );
+};
+
+// =============================================================================
+// NAVBAR COMPONENT
+// =============================================================================
+export const Navbar = ({ onMenuClick, showMenuButton = true }) => {
+  return (
+    <header className="h-16 px-4 lg:px-6 flex items-center justify-between bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-40">
       <div className="flex items-center gap-4">
-        {showLogo && (
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-neutral-900 dark:bg-white flex items-center justify-center rounded-sm transition-transform duration-150 group-hover:scale-105">
-              <Phone className="w-4 h-4 text-white dark:text-neutral-900" />
-            </div>
-            <span className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {title}
-            </span>
-          </Link>
+        {showMenuButton && (
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 rounded-xl text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         )}
+        <div className="lg:hidden">
+          <Logo collapsed />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {actions}
-        
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="btn-icon"
-          title="Toggle theme"
-        >
-          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+      <div className="flex items-center gap-1 md:gap-2">
+        <ThemeToggle />
+        <NotificationBell />
+        <div className="hidden sm:block w-px h-6 bg-neutral-200 dark:bg-neutral-700 mx-2" />
+        <ProfileDropdown />
       </div>
     </header>
   );
@@ -72,102 +174,117 @@ export const TopBar = ({
 // =============================================================================
 // SIDEBAR COMPONENT
 // =============================================================================
-export const Sidebar = ({ className = '' }) => {
-  const { user, logout } = useAuthStore();
+export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { logout } = useAuthStore();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const navItems = [
+  const mainNavItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/chat', icon: MessageSquare, label: 'Chat' },
+    { path: '/chat', icon: MessageSquare, label: 'AI Chat Assistant' },
+  ];
+
+  const featureNavItems = [
     { path: '/call', icon: Phone, label: 'Voice Call' },
     { path: '/history', icon: History, label: 'History' },
-    { path: '/profile', icon: User, label: 'Profile' },
+  ];
+
+  const settingsNavItems = [
+    { path: '/profile', icon: Settings, label: 'Settings' },
   ];
 
   if (user?.role === 'admin') {
-    navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
+    settingsNavItems.unshift({ path: '/admin', icon: Shield, label: 'Admin Panel' });
   }
 
   return (
-    <aside className={`sidebar ${isCollapsed ? 'w-16' : 'w-64'} ${className}`}>
-      {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-200 dark:border-neutral-800">
-        {!isCollapsed && (
-          <Link to="/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-neutral-900 dark:bg-white flex items-center justify-center rounded-sm">
-              <Phone className="w-4 h-4 text-white dark:text-neutral-900" />
-            </div>
-            <span className="font-semibold text-neutral-900 dark:text-white">
-              Assistant
-            </span>
-          </Link>
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="btn-icon"
-        >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-        </button>
-      </div>
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-neutral-950/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        <div className="sidebar-section">
-          {!isCollapsed && (
-            <span className="sidebar-section-title">Navigation</span>
-          )}
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-2' : ''}`}
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {!isCollapsed && <span>{item.label}</span>}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
-
-      {/* User section */}
-      <div className="sidebar-footer">
-        {!isCollapsed ? (
-          <div className="flex items-center gap-3 p-3 bg-neutral-100 dark:bg-neutral-800 rounded-sm">
-            <div className="w-8 h-8 bg-neutral-300 dark:bg-neutral-700 rounded-sm flex items-center justify-center">
-              <User className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                {user?.name || 'User'}
-              </p>
-              <p className="text-xs text-neutral-500 truncate">
-                {user?.email || ''}
-              </p>
-            </div>
-            <button onClick={handleLogout} className="btn-icon p-1" title="Logout">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <button onClick={handleLogout} className="btn-icon w-full justify-center" title="Logout">
-            <LogOut className="w-4 h-4" />
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        flex flex-col
+        bg-white dark:bg-neutral-950
+        border-r border-neutral-200 dark:border-neutral-800
+        transition-all duration-300 ease-in-out
+        ${isCollapsed ? 'w-20' : 'w-72'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Header */}
+        <div className="h-16 px-4 flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800">
+          <Logo collapsed={isCollapsed} />
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            <X className="w-5 h-5" />
           </button>
-        )}
-      </div>
-    </aside>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-6 px-3">
+          <SidebarSection title="Main" isCollapsed={isCollapsed}>
+            {mainNavItems.map((item) => (
+              <SidebarItem
+                key={item.path}
+                path={item.path}
+                icon={item.icon}
+                label={item.label}
+                isCollapsed={isCollapsed}
+              />
+            ))}
+          </SidebarSection>
+
+          <SidebarSection title="Features" isCollapsed={isCollapsed}>
+            {featureNavItems.map((item) => (
+              <SidebarItem
+                key={item.path}
+                path={item.path}
+                icon={item.icon}
+                label={item.label}
+                isCollapsed={isCollapsed}
+              />
+            ))}
+          </SidebarSection>
+
+          <SidebarSection title="Settings" isCollapsed={isCollapsed}>
+            {settingsNavItems.map((item) => (
+              <SidebarItem
+                key={item.path}
+                path={item.path}
+                icon={item.icon}
+                label={item.label}
+                isCollapsed={isCollapsed}
+              />
+            ))}
+          </SidebarSection>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-neutral-100 dark:border-neutral-800">
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex w-full items-center justify-center gap-2 p-3 rounded-xl text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm">Collapse</span>
+              </>
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 
@@ -176,46 +293,22 @@ export const Sidebar = ({ className = '' }) => {
 // =============================================================================
 export const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-neutral-950/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+        <Navbar 
+          onMenuClick={() => setSidebarOpen(true)} 
         />
-      )}
-
-      {/* Sidebar - hidden on mobile, visible on desktop */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        transform lg:transform-none transition-transform duration-250
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <Sidebar />
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Mobile header */}
-        <header className="lg:hidden topbar">
-          <button onClick={() => setSidebarOpen(true)} className="btn-icon">
-            <Menu className="w-5 h-5" />
-          </button>
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-neutral-900 dark:bg-white flex items-center justify-center rounded-sm">
-              <Phone className="w-4 h-4 text-white dark:text-neutral-900" />
-            </div>
-            <span className="font-semibold text-neutral-900 dark:text-white">
-              Assistant
-            </span>
-          </Link>
-          <div className="w-8" />
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1">
+        <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>
       </div>
@@ -253,17 +346,17 @@ export const PageHeader = ({
           onClick={() => navigate(backPath)}
           className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white mb-4 transition-colors"
         >
-          <ChevronRight className="w-4 h-4 rotate-180" />
+          <ChevronLeft className="w-4 h-4" />
           {backLabel}
         </button>
       )}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
             {title}
           </h1>
           {description && (
-            <p className="mt-1 text-neutral-500 text-sm">
+            <p className="mt-1 text-neutral-500 dark:text-neutral-400 text-sm">
               {description}
             </p>
           )}
@@ -279,74 +372,6 @@ export const PageHeader = ({
 };
 
 // =============================================================================
-// CARD COMPONENT
-// =============================================================================
-export const Card = ({ 
-  children, 
-  className = '', 
-  hover = false,
-  padding = true 
-}) => {
-  return (
-    <div className={`
-      card 
-      ${hover ? 'card-hover cursor-pointer' : ''} 
-      ${padding ? 'p-6' : ''}
-      ${className}
-    `}>
-      {children}
-    </div>
-  );
-};
-
-// =============================================================================
-// MODAL COMPONENT
-// =============================================================================
-export const Modal = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children,
-  footer = null,
-  size = 'md'
-}) => {
-  if (!isOpen) return null;
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-  };
-
-  return (
-    <>
-      <div className="modal-overlay" onClick={onClose} />
-      <div className={`modal ${sizeClasses[size]}`}>
-        {title && (
-          <div className="modal-header flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {title}
-            </h2>
-            <button onClick={onClose} className="btn-icon">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-        <div className="modal-body">
-          {children}
-        </div>
-        {footer && (
-          <div className="modal-footer">
-            {footer}
-          </div>
-        )}
-      </div>
-    </>
-  );
-};
-
-// =============================================================================
 // EMPTY STATE COMPONENT
 // =============================================================================
 export const EmptyState = ({
@@ -356,10 +381,14 @@ export const EmptyState = ({
   action = null
 }) => {
   return (
-    <div className="empty-state">
-      {Icon && <Icon className="empty-state-icon" />}
-      <h3 className="empty-state-title">{title}</h3>
-      <p className="empty-state-description">{description}</p>
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      {Icon && (
+        <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+          <Icon className="w-8 h-8 text-neutral-400" />
+        </div>
+      )}
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{title}</h3>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{description}</p>
       {action && (
         <div className="mt-6">
           {action}
@@ -376,47 +405,22 @@ export const Skeleton = ({ className = '', variant = 'text' }) => {
   const variants = {
     text: 'h-4 w-full',
     title: 'h-6 w-3/4',
-    avatar: 'h-10 w-10',
-    card: 'h-32 w-full',
-    button: 'h-10 w-24',
+    avatar: 'h-10 w-10 rounded-xl',
+    card: 'h-32 w-full rounded-2xl',
+    button: 'h-10 w-24 rounded-xl',
   };
 
   return (
-    <div className={`skeleton ${variants[variant]} ${className}`} />
-  );
-};
-
-// =============================================================================
-// CHIP/TAG COMPONENT
-// =============================================================================
-export const Chip = ({ 
-  children, 
-  active = false, 
-  onClick = null,
-  icon: Icon = null 
-}) => {
-  const Component = onClick ? 'button' : 'span';
-  
-  return (
-    <Component
-      onClick={onClick}
-      className={`chip ${active ? 'chip-active' : ''} ${onClick ? 'cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700' : ''}`}
-    >
-      {Icon && <Icon className="w-3 h-3" />}
-      {children}
-    </Component>
+    <div className={`animate-pulse bg-neutral-200 dark:bg-neutral-800 rounded-lg ${variants[variant]} ${className}`} />
   );
 };
 
 export default {
-  TopBar,
+  Navbar,
   Sidebar,
   AppLayout,
   SimpleLayout,
   PageHeader,
-  Card,
-  Modal,
   EmptyState,
   Skeleton,
-  Chip,
 };

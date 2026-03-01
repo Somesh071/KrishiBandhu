@@ -7,9 +7,8 @@ export default {
   ],
   theme: {
     extend: {
-      // Design System: Vibrant, Warm, Farmer-friendly palette
       colors: {
-        // Neutral scale
+        // Neutral scale (warm stone tones)
         neutral: {
           50: '#fafaf9',
           100: '#f5f5f4',
@@ -25,7 +24,7 @@ export default {
           900: '#171717',
           950: '#0c0a09',
         },
-        // Primary - Fresh Green (farming, growth)
+        // Primary - Forest Green (farming, growth, nature)
         primary: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -37,8 +36,9 @@ export default {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
+          950: '#052e16',
         },
-        // Secondary - Warm Amber (harvest, sunshine)
+        // Secondary - Harvest Amber (sunshine, crops)
         secondary: {
           50: '#fffbeb',
           100: '#fef3c7',
@@ -51,8 +51,8 @@ export default {
           800: '#92400e',
           900: '#78350f',
         },
-        // Accent - Sky Blue (water, clear sky)
-        accent: {
+        // Accent - Sky Blue (water, rain, clear sky)
+        sky: {
           50: '#f0f9ff',
           100: '#e0f2fe',
           200: '#bae6fd',
@@ -64,7 +64,7 @@ export default {
           800: '#075985',
           900: '#0c4a6e',
         },
-        // Earth tones
+        // Earth tones (soil, roots)
         earth: {
           50: '#fdf8f6',
           100: '#f2e8e5',
@@ -77,21 +77,30 @@ export default {
           800: '#846358',
           900: '#43302b',
         },
-        // Glass surface colors
-        glass: {
-          light: 'rgba(255, 255, 255, 0.85)',
-          dark: 'rgba(23, 23, 23, 0.8)',
-          border: 'rgba(255, 255, 255, 0.15)',
-        }
+        // Terracotta (pottery, rural aesthetic)
+        terracotta: {
+          50: '#fef7f4',
+          100: '#fceee8',
+          200: '#f9dcd1',
+          300: '#f4c0ab',
+          400: '#ed9e7d',
+          500: '#e47a52',
+          600: '#d45f38',
+          700: '#b14a2b',
+          800: '#8f3d26',
+          900: '#743523',
+        },
       },
-      // Sharp, squared geometry - minimal border radius
+      // Rounded cards for modern, friendly feel
       borderRadius: {
         'none': '0',
-        'xs': '2px',
-        'sm': '4px',
-        DEFAULT: '4px',
-        'md': '6px',
-        'lg': '8px',
+        'sm': '6px',
+        DEFAULT: '8px',
+        'md': '10px',
+        'lg': '12px',
+        'xl': '16px',
+        '2xl': '20px',
+        '3xl': '24px',
       },
       // Thin sans-serif typography
       fontFamily: {

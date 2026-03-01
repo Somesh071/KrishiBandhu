@@ -1,24 +1,262 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowLeft, 
   Send, 
   Loader2, 
   MessageSquare, 
   Bot,
   User,
-  ImagePlus,
+  Mic,
+  MicOff,
+  Paperclip,
   X,
-  Download
+  Sparkles,
+  ChevronLeft,
+  Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import conversationService from '../services/conversation.service';
+import { AppLayout } from '../components/Layout';
+import { Button, IconButton } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
+import useAuthStore from '../store/authStore';
 
+// =============================================================================
+// MESSAGE BUBBLE COMPONENT
+// =============================================================================
+const MessageBubble = ({ message, isUser }) => {
+  const { user } = useAuthStore();
+
+  return (
+    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-fade-in`}>
+      {/* Avatar */}
+      <div className="flex-shrink-0">
+        {isUser ? (
+          <Avatar name={user?.name} size="sm" />
+        ) : (
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+        )}
+      </div>
+
+      {/* Message Content */}
+      <div className={`flex flex-col gap-1 max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
+        <div
+          className={`
+            px-4 py-3 rounded-2xl text-sm leading-relaxed
+            ${isUser 
+              ? 'bg-primary-600 text-white rounded-br-md' 
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-bl-md'
+            }
+          `}
+        >
+          {/* Image preview if exists */}
+          {message.imagePreview && (
+            <img 
+              src={message.imagePreview} 
+              alt="Uploaded" 
+              className="max-w-full rounded-lg mb-2 max-h-48 object-cover"
+            />
+          )}
+          
+          {/* Message text with formatting */}
+          <div className="whitespace-pre-wrap">
+            {message.content}
+          </div>
+        </div>
+
+        {/* Timestamp */}
+        <span className={`text-xs text-neutral-400 ${isUser ? 'text-right' : 'text-left'}`}>
+          {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }) : ''}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
+// TYPING INDICATOR
+// =============================================================================
+const TypingIndicator = () => (
+  <div className="flex gap-3 animate-fade-in">
+    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center flex-shrink-0">
+      <Bot className="w-4 h-4 text-white" />
+    </div>
+    <div className="bg-neutral-100 dark:bg-neutral-800 rounded-2xl rounded-bl-md px-4 py-3">
+      <div className="flex gap-1">
+        <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+    </div>
+  </div>
+);
+
+// =============================================================================
+// WELCOME MESSAGE
+// =============================================================================
+const WelcomeMessage = () => (
+  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mb-4">
+      <Sparkles className="w-8 h-8 text-white" />
+    </div>
+    <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+      KrishiBandhu AI Assistant
+    </h2>
+    <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mb-6">
+      Ask me anything about farming, crops, weather, government schemes, or agricultural practices. I'm here to help!
+    </p>
+    <div className="flex flex-wrap justify-center gap-2">
+      {['Crop recommendations', 'Weather forecast', 'Pest control', 'Government schemes'].map((suggestion) => (
+        <span 
+          key={suggestion} 
+          className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-xs text-neutral-600 dark:text-neutral-400"
+        >
+          {suggestion}
+        </span>
+      ))}
+    </div>
+  </div>
+);
+
+// =============================================================================
+// CHAT INPUT COMPONENT
+// =============================================================================
+const ChatInput = ({ 
+  value, 
+  onChange, 
+  onSend, 
+  disabled,
+  onVoiceClick,
+  isListening,
+  imagePreview,
+  onImageSelect,
+  onImageRemove
+}) => {
+  const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return;
+      }
+      onImageSelect(file);
+    }
+  };
+
+  return (
+    <div className="border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="mb-3 relative inline-block">
+          <img 
+            src={imagePreview} 
+            alt="Upload preview" 
+            className="h-20 rounded-xl object-cover"
+          />
+          <button
+            onClick={onImageRemove}
+            className="absolute -top-2 -right-2 w-6 h-6 bg-neutral-900 dark:bg-white rounded-full flex items-center justify-center"
+          >
+            <X className="w-3 h-3 text-white dark:text-neutral-900" />
+          </button>
+        </div>
+      )}
+
+      {/* Input Container */}
+      <div className="flex items-end gap-2">
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+
+        {/* Attachment Button */}
+        <IconButton
+          icon={Paperclip}
+          onClick={() => fileInputRef.current?.click()}
+          className="flex-shrink-0"
+        />
+
+        {/* Text Input */}
+        <div className="flex-1 relative">
+          <textarea
+            ref={inputRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message..."
+            disabled={disabled}
+            rows={1}
+            className="
+              w-full px-4 py-3 pr-12
+              bg-neutral-100 dark:bg-neutral-800
+              border-0 rounded-2xl
+              text-sm text-neutral-900 dark:text-neutral-100
+              placeholder:text-neutral-400 dark:placeholder:text-neutral-500
+              focus:outline-none focus:ring-2 focus:ring-primary-500/20
+              resize-none
+              disabled:opacity-50
+              min-h-[48px] max-h-32
+            "
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+            }}
+          />
+        </div>
+
+        {/* Voice Button */}
+        <IconButton
+          icon={isListening ? MicOff : Mic}
+          onClick={onVoiceClick}
+          className={`flex-shrink-0 ${isListening ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : ''}`}
+        />
+
+        {/* Send Button */}
+        <Button
+          onClick={onSend}
+          disabled={disabled || (!value.trim() && !imagePreview)}
+          size="icon"
+          className="flex-shrink-0 w-12 h-12 rounded-2xl"
+        >
+          {disabled ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Send className="w-5 h-5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
+// MAIN CHAT BOT COMPONENT
+// =============================================================================
 const ChatBot = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
   
-  // Check if we're resuming an existing conversation
   const resumeData = location.state?.resumeConversation || null;
 
   const [messages, setMessages] = useState([]);
@@ -29,10 +267,9 @@ const ChatBot = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isListening, setIsListening] = useState(false);
   
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,7 +284,6 @@ const ChatBot = () => {
     const init = async () => {
       try {
         if (resumeData) {
-          // Resume an existing conversation
           const response = await conversationService.resumeConversation(resumeData.id);
           if (response.success) {
             setConversationId(response.conversation.id);
@@ -59,13 +295,13 @@ const ChatBot = () => {
             })));
           }
         } else {
-          // Create a new conversation
           const response = await conversationService.createConversation();
           if (response.success) {
             setConversationId(response.conversation.id);
             setMessages([{
               role: 'assistant',
-              content: response.conversation.welcomeMessage || "Namaste! I am your Farming Assistant. Type your question and I'll help you with any agricultural queries!",
+              content: response.conversation.welcomeMessage || 
+                `Namaste ${user?.name || ''}! I am your KrishiBandhu AI Assistant. How can I help you with your farming today?`,
               timestamp: new Date()
             }]);
           }
@@ -82,9 +318,7 @@ const ChatBot = () => {
   }, []);
 
   // Handle send message
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
-    
+  const handleSendMessage = async () => {
     const text = inputMessage.trim();
     if (!text && !selectedImage) return;
     if (!conversationId) {
@@ -92,7 +326,6 @@ const ChatBot = () => {
       return;
     }
 
-    // Add user message to UI
     const userMessage = {
       role: 'user',
       content: text || 'Image sent for analysis',
@@ -103,7 +336,6 @@ const ChatBot = () => {
     setInputMessage('');
     setIsLoading(true);
 
-    // Clear image
     setSelectedImage(null);
     setImagePreview(null);
 
@@ -131,264 +363,105 @@ const ChatBot = () => {
       }]);
     } finally {
       setIsLoading(false);
-      inputRef.current?.focus();
     }
   };
 
   // Handle image selection
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
-        return;
-      }
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
+  const handleImageSelect = (file) => {
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  // Handle voice input
+  const handleVoiceClick = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      setIsListening(!isListening);
+      toast.success(isListening ? 'Voice input stopped' : 'Listening...');
+    } else {
+      toast.error('Voice input not supported in this browser');
     }
   };
-
-  // Handle end conversation
-  const handleEndChat = async () => {
-    if (conversationId) {
-      try {
-        await conversationService.endConversation(conversationId);
-        toast.success('Chat ended');
-      } catch (error) {
-        console.error('End chat error:', error);
-      }
-    }
-    navigate('/dashboard');
-  };
-
-  // Export conversation
-  const handleExport = () => {
-    const text = messages.map(msg => {
-      const role = msg.role === 'user' ? 'You' : 'Assistant';
-      const time = new Date(msg.timestamp).toLocaleString('en-IN');
-      return `[${time}] ${role}: ${msg.content}`;
-    }).join('\n\n');
-
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${conversationTitle || 'chat'}-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Conversation exported!');
-  };
-
-  // Handle Enter key
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Format time
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <Loader2 className="w-8 h-8 animate-spin text-neutral-400 mx-auto mb-4" />
-          <p className="text-sm text-neutral-500">
-            {resumeData ? 'Resuming conversation...' : 'Starting new chat...'}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex flex-col">
-      {/* Header */}
-      <header className="topbar sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
-          <button
-            onClick={handleEndChat}
-            className="btn-ghost gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-neutral-400" />
-            <span className="font-medium text-neutral-900 dark:text-white text-sm">
-              {conversationTitle}
-            </span>
-            {resumeData && (
-              <span className="chip text-xs">Continued</span>
-            )}
-          </div>
-
-          <button
-            onClick={handleExport}
-            className="btn-icon"
-            title="Export conversation"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
-
-      {/* Messages Area */}
-      <main className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full flex flex-col px-4 py-6">
-          <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className={`flex items-start gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  {/* Avatar */}
-                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${
-                    msg.role === 'user' 
-                      ? 'bg-primary-600' 
-                      : 'bg-secondary-100 dark:bg-secondary-900/30'
-                  }`}>
-                    {msg.role === 'user' ? (
-                      <User className="w-4 h-4 text-white" />
-                    ) : (
-                      <Bot className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
-                    )}
-                  </div>
-                  
-                  {/* Message Bubble */}
-                  <div
-                    className={`rounded-sm px-4 py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-800'
-                    }`}
-                  >
-                    {msg.imagePreview && (
-                      <img 
-                        src={msg.imagePreview} 
-                        alt="Uploaded" 
-                        className="max-w-[200px] rounded-sm mb-2"
-                      />
-                    )}
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                    <p className={`text-xs mt-2 ${
-                      msg.role === 'user' 
-                        ? 'text-neutral-400 dark:text-neutral-500' 
-                        : 'text-neutral-400'
-                    }`}>
-                      {formatTime(msg.timestamp)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Typing Indicator */}
-            {isLoading && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
-                  </div>
-                  <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-sm px-4 py-3">
-                    <div className="flex space-x-1.5">
-                      <div className="w-2 h-2 bg-neutral-300 dark:bg-neutral-600 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-neutral-300 dark:bg-neutral-600 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-neutral-300 dark:bg-neutral-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-      </main>
-
-      {/* Image Preview */}
-      {imagePreview && (
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-sm p-3 flex items-center gap-3 mb-2">
-            <img src={imagePreview} alt="Preview" className="w-12 h-12 rounded-sm object-cover" />
-            <span className="text-sm text-neutral-600 dark:text-neutral-400 flex-1">Image attached</span>
-            <button 
-              onClick={() => { setSelectedImage(null); setImagePreview(null); }}
-              className="btn-icon p-1.5"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input Area */}
-      <div className="border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex items-end gap-2">
-            {/* Image Upload Button */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageSelect}
-              accept="image/*"
-              className="hidden"
-            />
+    <AppLayout>
+      <div className="h-[calc(100vh-7rem)] flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        {/* Chat Header */}
+        <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center gap-3">
             <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-icon"
-              title="Upload image for crop diagnosis"
+              onClick={() => navigate('/dashboard')}
+              className="lg:hidden p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
-              <ImagePlus className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-
-            {/* Text Input */}
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your farming question..."
-                rows={1}
-                className="input resize-none py-3"
-                style={{ maxHeight: '120px', minHeight: '48px' }}
-                disabled={isLoading}
-              />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-white" />
             </div>
+            <div>
+              <h2 className="font-semibold text-neutral-900 dark:text-white">
+                {conversationTitle || 'KrishiBandhu AI'}
+              </h2>
+              <p className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-primary-500 rounded-full" />
+                Online
+              </p>
+            </div>
+          </div>
 
-            {/* Send Button */}
-            <button
-              type="submit"
-              disabled={isLoading || (!inputMessage.trim() && !selectedImage)}
-              className="btn-primary px-4 py-3 disabled:opacity-40"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </button>
-          </form>
-          <p className="text-xs text-neutral-400 mt-2 text-center">
-            Press Enter to send, Shift+Enter for new line
-          </p>
+          <div className="flex items-center gap-2">
+            <IconButton
+              icon={Clock}
+              onClick={() => navigate('/history')}
+              className="hidden sm:flex"
+            />
+          </div>
         </div>
+
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6">
+          {isInitializing ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-3" />
+                <p className="text-sm text-neutral-500">Starting conversation...</p>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
+            <WelcomeMessage />
+          ) : (
+            <div className="space-y-6 max-w-3xl mx-auto">
+              {messages.map((message, index) => (
+                <MessageBubble
+                  key={index}
+                  message={message}
+                  isUser={message.role === 'user'}
+                />
+              ))}
+              {isLoading && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <ChatInput
+          value={inputMessage}
+          onChange={setInputMessage}
+          onSend={handleSendMessage}
+          disabled={isLoading || isInitializing}
+          onVoiceClick={handleVoiceClick}
+          isListening={isListening}
+          imagePreview={imagePreview}
+          onImageSelect={handleImageSelect}
+          onImageRemove={() => {
+            setSelectedImage(null);
+            setImagePreview(null);
+          }}
+        />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
