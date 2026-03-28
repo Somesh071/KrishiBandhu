@@ -2,20 +2,23 @@
 
 pipeline {
     agent any
-    
+
     environment {
-        // Backend & Frontend Images
+        // Docker Images
         BACKEND_IMAGE = 'adarsh5559/krishbandhu-backend'
         FRONTEND_IMAGE = 'adarsh5559/krishbandhu-frontend'
-
         IMAGE_TAG = "${BUILD_NUMBER}"
 
+        // Application Git
         GIT_REPO = "https://github.com/Adarsh097/KrishiBandhu.git"
         GIT_BRANCH = "main"
     }
-    
+
     stages {
 
+        // ----------------------------
+        //  Cleanup Workspace
+        // ----------------------------
         stage('Cleanup Workspace') {
             steps {
                 script {
@@ -23,7 +26,10 @@ pipeline {
                 }
             }
         }
-        
+
+        // ----------------------------
+        //  Clone Application Repository
+        // ----------------------------
         stage('Clone Repository') {
             steps {
                 script {
@@ -32,10 +38,11 @@ pipeline {
             }
         }
 
-        //  Build Images (Parallel)
+        // ----------------------------
+        //  Build Docker Images (Parallel)
+        // ----------------------------
         stage('Build Docker Images') {
             parallel {
-
                 stage('Build Backend Image') {
                     steps {
                         script {
@@ -64,7 +71,9 @@ pipeline {
             }
         }
 
-        //  Run Unit Tests  
+        // ----------------------------
+        //  Run Unit Tests
+        // ----------------------------
         stage('Run Unit Tests') {
             steps {
                 script {
@@ -73,8 +82,10 @@ pipeline {
             }
         }
 
-        //  Security Scan
-        stage('Security Scan with Trivy') {
+        // ----------------------------
+        //  Security Scan with Trivy
+        // ----------------------------
+        stage('Security Scan') {
             steps {
                 script {
                     trivy_scan()
@@ -82,10 +93,11 @@ pipeline {
             }
         }
 
-        //  Push Images
+        // ----------------------------
+        //  Push Docker Images (Parallel)
+        // ----------------------------
         stage('Push Docker Images') {
             parallel {
-
                 stage('Push Backend Image') {
                     steps {
                         script {
@@ -112,19 +124,46 @@ pipeline {
             }
         }
 
-        //  GitOps Update - Update Kubernetes Manifests
+        // ----------------------------
+        //  GitOps Update - Kubernetes Manifests
+        // ----------------------------
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    update_k8s_manifests(
-                        imageTag: env.IMAGE_TAG,
-                        manifestsPath: 'kubernetes',
-                        gitCredentials: 'github-credentials',
-                        gitUserName: 'Adarsh097',
-                        gitUserEmail: 'adarshgupta0601@gmail.com'
-                    )
+                    // Clone private deployment repo
+                    dir('deployment-repo') {
+                        git(
+                            url: 'https://github.com/Adarsh097/KrishiBandhu-Deployment.git',
+                            branch: 'main',
+                            credentialsId: 'github-credentials'
+                        )
+
+                        // Call shared library to update manifests
+                        update_k8s_manifests(
+                            imageTag: env.IMAGE_TAG,
+                            manifestsPath: 'kubernetes',
+                            gitCredentials: 'github-credentials',
+                            gitUserName: 'Adarsh097',
+                            gitUserEmail: 'adarshgupta0601@gmail.com'
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo "Cleaning workspace after build..."
+                clean_ws()
+            }
+        }
+        success {
+            echo "Pipeline completed successfully! Docker images and Kubernetes manifests updated."
+        }
+        failure {
+            echo "Pipeline failed! Check logs for errors."
         }
     }
 }
