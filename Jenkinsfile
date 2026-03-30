@@ -5,8 +5,8 @@ pipeline {
 
     environment {
         // Docker Images
-        BACKEND_IMAGE = 'adarsh5559/krishbandhu-backend'
-        FRONTEND_IMAGE = 'adarsh5559/krishbandhu-frontend'
+        BACKEND_IMAGE = 'adarsh5559/krishibandhu-backend'
+        FRONTEND_IMAGE = 'adarsh5559/krishibandhu-frontend'
         IMAGE_TAG = "${BUILD_NUMBER}"
 
         // Application Git
