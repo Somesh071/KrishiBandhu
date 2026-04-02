@@ -64,7 +64,7 @@ const WelcomeSection = ({ user }) => {
             {user?.name || 'Farmer'}
           </h1>
           <p className="text-primary-100 text-sm lg:text-base max-w-lg">
-            WillKommen to KrishiBandhu. Check today's weather, market prices, and get AI-powered farming advice.
+            WillKommen to KrishiBandhu. Check today's weather, market prices, and get AI-powered farming suggestions.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
