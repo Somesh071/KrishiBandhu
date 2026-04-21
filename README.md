@@ -1,4 +1,4 @@
-# KrishiBandhu - AI-Powered Voice Assistant for Farmers Help
+# KrishiBandhu - AI-Powered Voice Assistant for Farmer's Need.
 
 An intelligent web application that helps farmers get instant answers to their agricultural queries through voice-based conversations powered by Google's Gemini AI.
 
